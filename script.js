@@ -1,5 +1,5 @@
 // 請替換成你的 Google Apps Script 部署網址
-const API_URL = "https://script.google.com/macros/s/你的網址識別碼/exec"; 
+const API_URL = "https://script.google.com/macros/s/AKfycbx8EWYzXJpbwCWp7ZmLo7KQE4xFJUZK0wqS0mGIBa4JQSn0rD9l2G0dwrWirpQ_TfnP/exec"; 
 
 let rawData = {};          // 儲存後端傳回的完整 JSON 資料
 let currentStudents = [];  // 當前班級/性別篩選條件下的學生清單
