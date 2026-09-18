@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>課堂互動抽籤系統</title>
+    <!-- 引入外部 CSS 樣式表 -->
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+    <div class="card" id="mainCard">
+        <h1>🎲 課堂抽籤系統</h1>
+
+        <div class="control-panel">
+            <div class="control-group">
+                <label for="classSelect">班級：</label>
+                <select id="classSelect" onchange="resetDisplay()">
+                    <option value="">載入中...</option>
+                </select>
+            </div>
+
+            <div class="control-group">
+                <label for="genderSelect">性別：</label>
+                <select id="genderSelect" onchange="resetDisplay()">
+                    <option value="ALL" selected>全部</option>
+                    <option value="男">男</option>
+                    <option value="女">女</option>
+                </select>
+            </div>
+
+            <div class="control-group">
+                <label for="countSelect">人數：</label>
+                <select id="countSelect" onchange="resetDisplay()">
+                    <option value="1" selected>1 人</option>
+                    <option value="2">2 人</option>
+                    <option value="3">3 人</option>
+                    <option value="4">4 人</option>
+                </select>
+            </div>
+        </div>
+
+        <div class="status-info" id="statusInfo">剩餘可抽：-- 人</div>
+
+        <div class="students-display" id="studentsContainer"></div>
+
+        <div class="btn-group">
+            <button class="btn" id="drawBtn" onclick="startDraw()" disabled>開始抽籤</button>
+            <button class="btn btn-reset" title="重新計算該班未抽籤名單" onclick="manualResetDrawn()">重置輪次</button>
+        </div>
+    </div>
+
+    <!-- 引入外部 JavaScript 邏輯檔案 -->
+    <script src="script.js"></script>
+</body>
+</html>
