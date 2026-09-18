@@ -1,27 +1,30 @@
-// 請替換成你部署後的 GAS Web App 網址
+// 請替換成你的 Google Apps Script 部署網址
 const API_URL = "https://script.google.com/macros/s/AKfycbx8EWYzXJpbwCWp7ZmLo7KQE4xFJUZK0wqS0mGIBa4JQSn0rD9l2G0dwrWirpQ_TfnP/exec"; 
 
-let currentStudents = [];
-let drawnSeats = [];
-let availableStudents = [];
+let rawData = {};          // 儲存後端傳回的完整 JSON 資料
+let currentStudents = [];  // 當前篩選條件下的學生清單
+let drawnSeats = [];      // 已抽中座號紀錄
+let availableStudents = [];// 剩餘可抽學生清單
 let isDrawing = false;
 
-// 頁面載入完成後初始化班級選單
 document.addEventListener("DOMContentLoaded", () => {
-    fetchClasses();
+    fetchAllData();
 });
 
-// 1. 載入班級選單
-async function fetchClasses() {
-    try {
-        const res = await fetch(`${API_URL}?action=getClasses`);
-        const data = await res.json();
-        
-        const select = document.getElementById("classSelect");
-        select.innerHTML = "";
+// 1. 一次性抓取所有班級與學生資料
+async function fetchAllData() {
+    const select = document.getElementById("classSelect");
+    select.innerHTML = '<option value="">載入中...</option>';
 
-        if (data.status === "success" && data.classes.length > 0) {
-            data.classes.forEach(c => {
+    try {
+        const res = await fetch(API_URL);
+        rawData = await res.json();
+        
+        select.innerHTML = "";
+        const classes = Object.keys(rawData); // 取得所有班級 (例如 ["708"])
+
+        if (classes.length > 0) {
+            classes.forEach(c => {
                 const opt = document.createElement("option");
                 opt.value = c;
                 opt.textContent = c + " 班";
@@ -32,46 +35,53 @@ async function fetchClasses() {
             select.innerHTML = '<option value="">無班級資料</option>';
         }
     } catch (err) {
-        alert("載入班級失敗，請確認 API 網址或網路狀況");
+        alert("資料載入失敗，請確認 API 網址是否正確！");
         console.error(err);
     }
 }
 
-// 2. 載入學生資料與已抽歷史
-async function loadStudentsData() {
+// 2. 根據選取的班級與性別，整理出學生名單
+function loadStudentsData() {
     const className = document.getElementById("classSelect").value;
     const gender = document.getElementById("genderSelect").value;
     
-    if (!className) return;
+    if (!className || !rawData[className]) return;
 
-    document.getElementById("drawBtn").disabled = true;
-    document.getElementById("statusInfo").innerText = "讀取資料中...";
+    // 將物件 {"1": {name...}, "2": {name...}} 轉成陣列格式
+    const classObj = rawData[className];
+    currentStudents = [];
 
-    try {
-        const res = await fetch(`${API_URL}?action=getStudents&class=${encodeURIComponent(className)}&gender=${gender}`);
-        const data = await res.json();
-
-        if (data.status === "success") {
-            currentStudents = data.students;
-            drawnSeats = data.drawnSeats.map(String);
-
-            // 過濾出尚未抽中的學生
-            availableStudents = currentStudents.filter(s => !drawnSeats.includes(String(s.seat)));
-
-            document.getElementById("statusInfo").innerText = `剩餘可抽：${availableStudents.length} 人`;
-            
-            if (availableStudents.length > 0) {
-                document.getElementById("drawBtn").disabled = false;
-            } else {
-                document.getElementById("statusInfo").innerText += " (本輪已抽完，請點選重置輪次)";
-            }
+    Object.keys(classObj).forEach(seat => {
+        const student = classObj[seat];
+        if (gender === "ALL" || student.gender === gender) {
+            currentStudents.push({
+                seat: String(seat),
+                name: student.name,
+                gender: student.gender,
+                photo: student.photo,
+                className: className
+            });
         }
-    } catch (err) {
-        console.error("載入學生失敗", err);
+    });
+
+    // 依座號排序
+    currentStudents.sort((a, b) => Number(a.seat) - Number(b.seat));
+
+    // 篩選未抽過的學生
+    availableStudents = currentStudents.filter(s => !drawnSeats.includes(String(s.seat)));
+
+    const statusInfo = document.getElementById("statusInfo");
+    statusInfo.innerText = `剩餘可抽：${availableStudents.length} 人`;
+
+    if (availableStudents.length > 0) {
+        document.getElementById("drawBtn").disabled = false;
+    } else {
+        document.getElementById("drawBtn").disabled = true;
+        statusInfo.innerText += " (本輪已抽完，請點選重置輪次)";
     }
 }
 
-// 下拉選單切換時清空畫面並重載
+// 切換條件時重新整理畫面
 function resetDisplay() {
     document.getElementById("studentsContainer").innerHTML = "";
     loadStudentsData();
@@ -89,7 +99,6 @@ function startDraw() {
     const container = document.getElementById("studentsContainer");
     container.innerHTML = "";
 
-    // 建立卡片 placeholder
     const cardElements = [];
     for (let i = 0; i < drawCount; i++) {
         const card = document.createElement("div");
@@ -105,31 +114,27 @@ function startDraw() {
         cardElements.push(card);
     }
 
-    // 隨機動態跑號動畫
     let counter = 0;
     const interval = setInterval(() => {
         cardElements.forEach(card => {
             const randomStudent = availableStudents[Math.floor(Math.random() * availableStudents.length)];
-            card.querySelector(".seat").innerText = randomStudent.seat + "號";
+            card.querySelector(".seat").innerText = randomStudent.seat + " 號";
             card.querySelector(".name").innerText = randomStudent.name;
         });
 
         counter++;
-        if (counter > 20) { // 跑號約 2 秒
+        if (counter > 20) {
             clearInterval(interval);
             finalizeDraw(drawCount, cardElements);
         }
     }, 100);
 }
 
-// 4. 決定最終結果並傳回後端儲存
-async function finalizeDraw(drawCount, cardElements) {
-    // 洗牌抽取的學生
+// 4. 決定最終中籤者並渲染結果
+function finalizeDraw(drawCount, cardElements) {
     const shuffled = [...availableStudents].sort(() => 0.5 - Math.random());
     const selected = shuffled.slice(0, drawCount);
-    const selectedSeats = selected.map(s => String(s.seat));
 
-    // 渲染最終卡片資料
     selected.forEach((student, idx) => {
         const card = cardElements[idx];
         card.classList.remove("animation-rolling");
@@ -142,49 +147,23 @@ async function finalizeDraw(drawCount, cardElements) {
         }
         card.querySelector(".seat").innerText = student.seat + " 號";
         card.querySelector(".name").innerText = student.name;
+
+        // 將中籤者加入已抽名單中
+        drawnSeats.push(String(student.seat));
     });
 
-    const className = document.getElementById("classSelect").value;
-
-    // 將抽中名單寫回 Google Apps Script
-    try {
-        await fetch(API_URL, {
-            method: "POST",
-            headers: { "Content-Type": "text/plain;charset=utf-8" },
-            body: JSON.stringify({
-                action: "markDrawn",
-                className: className,
-                seats: selectedSeats
-            })
-        });
-    } catch (err) {
-        console.error("儲存抽籤結果失敗", err);
-    }
-
     isDrawing = false;
-    loadStudentsData(); // 更新剩餘人數
+    loadStudentsData();
 }
 
 // 5. 重置該班級的抽籤輪次
-async function manualResetDrawn() {
+function manualResetDrawn() {
     const className = document.getElementById("classSelect").value;
     if (!className) return;
 
     if (confirm(`確定要重置 ${className} 班的抽籤輪次嗎？`)) {
-        document.getElementById("statusInfo").innerText = "重置中...";
-        try {
-            await fetch(API_URL, {
-                method: "POST",
-                headers: { "Content-Type": "text/plain;charset=utf-8" },
-                body: JSON.stringify({
-                    action: "resetDrawn",
-                    className: className
-                })
-            });
-            document.getElementById("studentsContainer").innerHTML = "";
-            loadStudentsData();
-        } catch (err) {
-            alert("重置失敗");
-        }
+        drawnSeats = [];
+        document.getElementById("studentsContainer").innerHTML = "";
+        loadStudentsData();
     }
 }
