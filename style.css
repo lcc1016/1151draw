@@ -1,60 +1,186 @@
-/* 學生卡片容器：採用彈性佈局並保持一致寬度 */
+/* 頁面整體居中 */
+body {
+    background-color: #f0f4f8;
+    font-family: "Microsoft JhengHei", Arial, sans-serif;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 100vh;
+    margin: 0;
+    padding: 20px;
+    box-sizing: border-box;
+}
+
+/* 白底主卡片：加高加寬，設有最小高度 */
+.card {
+    background: #ffffff;
+    border-radius: 20px;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.08);
+    width: 100%;
+    max-width: 950px;
+    min-height: 550px; /* 加高一倍的核心設定 */
+    padding: 35px;
+    box-sizing: border-box;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: space-between; /* 讓內容與按鈕上下均勻分佈 */
+}
+
+h1 {
+    margin-top: 0;
+    margin-bottom: 20px;
+    color: #333;
+}
+
+/* 控制列配置 */
+.control-panel {
+    display: flex;
+    gap: 20px;
+    margin-bottom: 10px;
+    flex-wrap: wrap;
+    justify-content: center;
+}
+
+.control-group label {
+    font-weight: bold;
+    color: #555;
+}
+
+.control-group select {
+    padding: 8px 12px;
+    border-radius: 8px;
+    border: 1px solid #ccc;
+    font-size: 16px;
+    outline: none;
+}
+
+.status-info {
+    color: #777;
+    margin-bottom: 15px;
+    font-size: 15px;
+}
+
+/* 學生顯示區塊：確保多張卡片換行時不被裁切 */
 .students-display {
     display: flex;
     justify-content: center;
     align-items: center;
-    gap: 15px;
-    flex-wrap: wrap; /* 人數多時自動換行 */
+    gap: 20px;
+    flex-wrap: wrap;
+    width: 100%;
     margin: 20px 0;
+    min-height: 280px; /* 留出卡片動畫空間 */
 }
 
-/* 個別學生卡片外框 */
+/* 學生單獨卡片 */
 .student-card {
-    width: 160px;             /* 控制整張卡片的寬度 */
+    width: 190px;
     background: #ffffff;
-    border-radius: 12px;
-    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+    border-radius: 14px;
+    box-shadow: 0 6px 16px rgba(0, 0, 0, 0.12);
     overflow: hidden;
     display: flex;
     flex-direction: column;
     align-items: center;
-    transition: transform 0.2s;
+    transition: transform 0.2s, box-shadow 0.2s;
 }
 
-/* 照片外層容器：設定固定高度 */
+.student-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 10px 20px rgba(0, 0, 0, 0.15);
+}
+
+/* 照片外框 */
 .photo-box {
     width: 100%;
-    height: 180px;            /* 統一照片顯示的高度 */
-    background-color: #f0f0f0;
-    overflow: hidden;
+    height: 230px;
+    background-color: #f8f9fa;
     display: flex;
     justify-content: center;
     align-items: center;
+    padding: 8px;
+    box-sizing: border-box;
 }
 
-/* 照片本身：圖片自動縮放且不變形 */
+/* 照片本體：預設完整呈現不裁切 */
 .photo-box img {
-    width: 100%;
-    height: 100%;
-    object-fit: cover;        /* 自動裁切填滿，避免大頭照變形伸展 */
-    object-position: center;   /* 預設對齊臉部中央 */
+    max-width: 100%;
+    max-height: 100%;
+    width: auto;
+    height: auto;
+    object-fit: contain; /* 改為 contain 確保大頭照不會被切掉 */
+    border-radius: 6px;
 }
 
-/* 底部姓名與座號區塊 */
+/* 學生文字資訊 */
 .info-box {
-    padding: 10px;
+    padding: 12px 10px;
     text-align: center;
     width: 100%;
+    background: #fff;
+    border-top: 1px solid #eee;
+    box-sizing: border-box;
 }
 
 .info-box .seat {
-    font-size: 0.9em;
+    font-size: 1em;
     color: #666;
-    margin-right: 5px;
+    margin-right: 6px;
 }
 
 .info-box .name {
-    font-size: 1.1em;
+    font-size: 1.2em;
     font-weight: bold;
-    color: #333;
+    color: #2c3e50;
+}
+
+/* 按鈕區塊 */
+.btn-group {
+    display: flex;
+    gap: 15px;
+    margin-top: 15px;
+}
+
+.btn {
+    padding: 12px 32px;
+    font-size: 18px;
+    font-weight: bold;
+    color: white;
+    background-color: #2ecc71;
+    border: none;
+    border-radius: 30px;
+    cursor: pointer;
+    box-shadow: 0 4px 12px rgba(46, 204, 113, 0.3);
+    transition: all 0.2s;
+}
+
+.btn:hover:not(:disabled) {
+    background-color: #27ae60;
+    transform: scale(1.03);
+}
+
+.btn:disabled {
+    background-color: #bdc3c7;
+    box-shadow: none;
+    cursor: not-allowed;
+}
+
+.btn-reset {
+    background-color: #e74c3c;
+    box-shadow: 0 4px 12px rgba(231, 76, 60, 0.3);
+}
+
+.btn-reset:hover {
+    background-color: #c0392b;
+}
+
+/* 抽籤滾動動畫效果 */
+.animation-rolling {
+    animation: pulse 0.4s infinite alternate;
+}
+
+@keyframes pulse {
+    0% { transform: scale(0.98); }
+    100% { transform: scale(1.02); }
 }
